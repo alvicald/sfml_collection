@@ -1,11 +1,18 @@
 
 set(TARGET hordes)
-set(SRC_DIR ./src)
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SRCS
     src/main.cpp
     src/game.h
     src/game.cpp
 )
+
+set(PROJECT_RESOURCE_DIR ./resources)
+message(STATUS "PROJECT_RESOURCE_DIR = ${PROJECT_RESOURCE_DIR}")
+message(STATUS "SRC_DIR = ${SRC_DIR}")
+
+get_filename_component(RESOURCE_DIR ${PROJECT_RESOURCE_DIR} REALPATH)
+configure_file(conf.h.in ${SRC_DIR}/conf.h)
 
 add_executable(${TARGET} ${SRCS})
 

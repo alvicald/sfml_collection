@@ -1,0 +1,6 @@
+#ifndef CONF_H_IN_
+#define CONF_H_IN_
+
+#define RESOURCE_DIR "@RESOURCE_DIR@"
+
+#endif // CONF_H_IN_
