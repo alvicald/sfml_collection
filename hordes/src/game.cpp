@@ -2,6 +2,8 @@
 
 #include <game.h>
 #include <conf.h>
+#include <entities/hero.h>
+#include <states/game_state.h>
 
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
@@ -19,7 +21,7 @@ void free_sf_object(T* ptr)
         delete ptr;
 }
 
-}
+} // namespace
 
 namespace hordes {
 
@@ -51,6 +53,7 @@ Game::Game()
         else
             throw std::runtime_error("Text pointer is null");
 
+        init_states();
     }
     catch (std::bad_alloc& e)
     {
@@ -62,25 +65,25 @@ Game::Game()
     }
 }
 
+Game::~Game()
+{
+    while (!m_state_stack.empty())
+        m_state_stack.pop();
+}
+
 void Game::run()
 {
-    sf::Clock clock;
-    sf::Time game_working_time { sf::Time::Zero };
-    std::uint32_t frame_count { 0 };
-
     while (m_game_window->isOpen())
     {
-        sf::Time iter_work_time = clock.restart();
-
-        update_events();
-
-        update_statistic(iter_work_time, game_working_time, frame_count);
+        updateDt();
+        update();
         render();
-
-        sf::Time sleepTime = TimePerFrame - clock.getElapsedTime();
-        if (sleepTime > sf::Time::Zero)
-            sf::sleep(sleepTime);
     }
+}
+
+void Game::init_states()
+{
+    m_state_stack.push(std::make_unique< GameState >(*m_game_window));
 }
 
 void Game::update_events()
@@ -88,24 +91,7 @@ void Game::update_events()
     sf::Event event;
     while (m_game_window->pollEvent(event))
     {
-        switch (event.type)
-        {
-        case sf::Event::Closed:
-            m_game_window->close();
-            break;
-        case sf::Event::KeyReleased:
-            switch (event.key.code)
-            {
-            case sf::Keyboard::Escape:
-                m_game_window->close();
-                break;
-            default:
-                break;
-            }
-            break;
-        default:
-            break;
-        }
+
     }
 }
 
@@ -113,23 +99,36 @@ void Game::update_events()
 void Game::render()
 {
     m_game_window->clear();
+
+    if (!m_state_stack.empty())
+        m_state_stack.top()->render(*m_game_window);
+
     m_game_window->draw(*m_statistic_text);
     m_game_window->display();
 }
 
-void Game::update_statistic(sf::Time const& time,
-                            sf::Time& game_working_time,
-                            std::uint32_t& frame_count)
+void Game::update()
 {
-    game_working_time += time;
-    frame_count += 1;
+    update_events();
 
-    if (game_working_time >= sf::seconds(1.f))
+    if (!m_state_stack.empty())
     {
-        m_statistic_text->setString("FPS: " + std::to_string(frame_count));
-        game_working_time -= sf::seconds(1.0f);
-        frame_count = 0;
+        m_state_stack.top()->update(m_dt);
+
+        if (m_state_stack.top()->getQuit())
+        {
+            m_state_stack.top()->end_state();
+            m_state_stack.pop();
+        }
     }
+    else
+        m_game_window->close();
+}
+
+void Game::updateDt()
+{
+    m_dt = m_clock.restart().asSeconds();
+    m_statistic_text->setString(std::to_string(m_dt));
 }
 
 void Game::window_deleter::operator()(sf::RenderWindow* ptr)

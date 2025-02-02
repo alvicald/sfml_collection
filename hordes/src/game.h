@@ -1,12 +1,15 @@
-#ifndef GAME_H_
-#define GAME_H_
+#ifndef HORDES_GAME_H_
+#define HORDES_GAME_H_
 
-#include <memory>
 #include <cstdint>
+#include <stack>
+
+#include <states/state.h>
 
 #include <SFML/Window/VideoMode.hpp>
+#include <SFML/System/Clock.hpp>
 
-namespace sf{
+namespace sf {
 
 //! sf::RenderWindow forward declaration
 class RenderWindow;
@@ -28,15 +31,20 @@ class Game
 {
 public:
     explicit Game();
+    ~Game();
 
     void run();
 
 private:
+    void init_states();
+
     void update_events();
 
     void render();
 
-    void update_statistic(sf::Time const& time, sf::Time& game_working_time, uint32_t& frame_count);
+    void update();
+
+    void updateDt();
 
 private:
     //! sf::RenderWindow deleter
@@ -58,14 +66,17 @@ private:
     };
 
 private:
+    //! State stack
+    std::stack< State::Ptr > m_state_stack;
+
     //! Main game window
     std::unique_ptr< sf::RenderWindow, window_deleter > m_game_window;
 
     //! Statistic information text
-    std::unique_ptr< sf::Text, text_deleter> m_statistic_text;
+    std::unique_ptr< sf::Text, text_deleter > m_statistic_text;
 
     //! Statistic information text
-    std::unique_ptr< sf::Font, font_deleter> m_font;
+    std::unique_ptr< sf::Font, font_deleter > m_font;
 
     //! Game name
     char const* game_name { "Hordes" };
@@ -75,8 +86,14 @@ private:
 
     //! Size mode
     std::uint32_t m_size_mode { 8 };
+
+    //! Delta time
+    float m_dt;
+
+    //! Time clock
+    sf::Clock m_clock;
 };
 
 } // namespace hordes
 
-#endif // GAME_H_
+#endif // HORDES_GAME_H_
